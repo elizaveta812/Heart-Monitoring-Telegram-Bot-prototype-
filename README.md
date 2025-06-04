@@ -15,7 +15,7 @@ app/
 
 │   ├── auth_service.py
 
-│   ├── alert_service.py      # Переименован из transaction_service.py
+│   ├── alert_service.py      
 
 │   ├── ml_service.py
 
