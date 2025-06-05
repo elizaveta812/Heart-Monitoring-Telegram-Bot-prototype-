@@ -71,7 +71,7 @@ def get_conversation_handler() -> ConversationHandler:
         states={
             GENDER: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_gender)],
             AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_age)],
-            SUGAR_LEVEL: [MessageHandler(filters.TiEXT & ~filters.COMMAND, receive_sugar_level)],
+            SUGAR_LEVEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_sugar_level)],
             CK_MB: [MessageHandler(filters.TEXT & ~filters.COMMAND, finish)],
         },
         fallbacks=[MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text('Пожалуйста, введите корректное значение.'))],
