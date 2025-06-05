@@ -1,74 +1,78 @@
 from telegram import Update
-from telegram.ext import CallbackContext, MessageHandler, Filters, CommandHandler, ConversationHandler
+from telegram.ext import ApplicationBuilder, CallbackContext, MessageHandler, filters, CommandHandler, ConversationHandler
 
-# словарь для хранения данных пользователей - потом заменю на базу данных
+# СЃР»РѕРІР°СЂСЊ РґР»СЏ С…СЂР°РЅРµРЅРёСЏ РґР°РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ - РїРѕС‚РѕРј Р·Р°РјРµРЅСЋ РЅР° Р±Р°Р·Сѓ РґР°РЅРЅС‹С…
 user_data = {}
 
-# Определяем состояния
+# РћРїСЂРµРґРµР»СЏРµРј СЃРѕСЃС‚РѕСЏРЅРёСЏ
 GENDER, AGE, SUGAR_LEVEL, CK_MB = range(4)
 
-def start(update: Update, context: CallbackContext) -> int:
-    update.message.reply_text('Привет! Давайте начнем. Какой пол у человека, за чьим состоянием я буду следить? Если мужской, то поставьте 1, а если женский, то поставьте 0.')
+
+async def start(update: Update, context: CallbackContext) -> int:
+    await update.message.reply_text('РџСЂРёРІРµС‚! Р”Р°РІР°Р№С‚Рµ РЅР°С‡РЅРµРј. РљР°РєРѕР№ РїРѕР» Сѓ С‡РµР»РѕРІРµРєР°, Р·Р° С‡СЊРёРј СЃРѕСЃС‚РѕСЏРЅРёРµРј СЏ Р±СѓРґСѓ СЃР»РµРґРёС‚СЊ? Р•СЃР»Рё РјСѓР¶СЃРєРѕР№, С‚Рѕ РїРѕСЃС‚Р°РІСЊС‚Рµ 1, Р° РµСЃР»Рё Р¶РµРЅСЃРєРёР№, С‚Рѕ РїРѕСЃС‚Р°РІСЊС‚Рµ 0.')
     return GENDER
 
-def receive_gender(update: Update, context: CallbackContext) -> int:
+
+async def receive_gender(update: Update, context: CallbackContext) -> int:
     gender = update.message.text
     if gender not in ['0', '1']:
-        update.message.reply_text('Пожалуйста, введите 0 для женского или 1 для мужского пола.')
+        await update.message.reply_text('РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ 0 РґР»СЏ Р¶РµРЅСЃРєРѕРіРѕ РёР»Рё 1 РґР»СЏ РјСѓР¶СЃРєРѕРіРѕ РїРѕР»Р°.')
         return GENDER
 
     user_data[update.message.chat.id] = {'gender': gender}
-    update.message.reply_text('Сколько этому человеку лет?')
+    await update.message.reply_text('РЎРєРѕР»СЊРєРѕ СЌС‚РѕРјСѓ С‡РµР»РѕРІРµРєСѓ Р»РµС‚?')
     return AGE
 
-def receive_age(update: Update, context: CallbackContext) -> int:
+
+async def receive_age(update: Update, context: CallbackContext) -> int:
     age = update.message.text
     if not age.isdigit() or int(age) <= 0:
-        update.message.reply_text('Пожалуйста, введите корректный возраст (положительное число).')
+        await update.message.reply_text('РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅС‹Р№ РІРѕР·СЂР°СЃС‚ (РїРѕР»РѕР¶РёС‚РµР»СЊРЅРѕРµ С‡РёСЃР»Рѕ).')
         return AGE
 
     user_data[update.message.chat.id]['age'] = age
-    update.message.reply_text('Какой у этого человека уровень сахара (в миллиграммах на децилитр)? Нормальным уровнем считается 60-100.')
+    await update.message.reply_text('РљР°РєРѕР№ Сѓ СЌС‚РѕРіРѕ С‡РµР»РѕРІРµРєР° СѓСЂРѕРІРµРЅСЊ СЃР°С…Р°СЂР° (РІ РјРёР»Р»РёРіСЂР°РјРјР°С… РЅР° РґРµС†РёР»РёС‚СЂ)? РќРѕСЂРјР°Р»СЊРЅС‹Рј СѓСЂРѕРІРЅРµРј СЃС‡РёС‚Р°РµС‚СЃСЏ 60-100.')
     return SUGAR_LEVEL
 
-def receive_sugar_level(update: Update, context: CallbackContext) -> int:
+
+async def receive_sugar_level(update: Update, context: CallbackContext) -> int:
     sugar_level = update.message.text
     if not sugar_level.isdigit() or not (40 <= int(sugar_level) <= 500):
-        update.message.reply_text('Пожалуйста, введите уровень сахара в диапазоне от 40 до 500.')
+        await update.message.reply_text('РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ СѓСЂРѕРІРµРЅСЊ СЃР°С…Р°СЂР° РІ РґРёР°РїР°Р·РѕРЅРµ РѕС‚ 40 РґРѕ 500.')
         return SUGAR_LEVEL
 
     user_data[update.message.chat.id]['sugar_level'] = sugar_level
-    update.message.reply_text('Какой у вас показатель креатинкиназа МВ? Если показатель неизвестен, то поставьте любое значение от 0 до 25 - этот уровень считается нормой.')
+    await update.message.reply_text('РљР°РєРѕР№ Сѓ РІР°СЃ РїРѕРєР°Р·Р°С‚РµР»СЊ РєСЂРµР°С‚РёРЅРєРёРЅР°Р·Р° РњР’? Р•СЃР»Рё РїРѕРєР°Р·Р°С‚РµР»СЊ РЅРµРёР·РІРµСЃС‚РµРЅ, С‚Рѕ РїРѕСЃС‚Р°РІСЊС‚Рµ Р»СЋР±РѕРµ Р·РЅР°С‡РµРЅРёРµ РѕС‚ 0 РґРѕ 25 - СЌС‚РѕС‚ СѓСЂРѕРІРµРЅСЊ СЃС‡РёС‚Р°РµС‚СЃСЏ РЅРѕСЂРјРѕР№.')
     return CK_MB
 
-def finish(update: Update, context: CallbackContext) -> int:
+
+async def finish(update: Update, context: CallbackContext) -> int:
     ck_mb = update.message.text
     if not ck_mb.isdigit() or int(ck_mb) < 0 or int(ck_mb) > 300:
-        update.message.reply_text('Пожалуйста, введите корректный показатель креатинкиназа МВ (от 0 до 300).')
+        await update.message.reply_text('РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅС‹Р№ РїРѕРєР°Р·Р°С‚РµР»СЊ РєСЂРµР°С‚РёРЅРєРёРЅР°Р·Р° РњР’ (РѕС‚ 0 РґРѕ 300).')
         return CK_MB
 
     user_data[update.message.chat.id]['ck_mb'] = ck_mb
-    update.message.reply_text('Спасибо! Теперь я буду собирать данные с носимого устройства. Мне понадобятся частота сердечных сокращений, систолическое и диастолическое давление.')
+    await update.message.reply_text('РЎРїР°СЃРёР±Рѕ! РўРµРїРµСЂСЊ СЏ Р±СѓРґСѓ СЃРѕР±РёСЂР°С‚СЊ РґР°РЅРЅС‹Рµ СЃ РЅРѕСЃРёРјРѕРіРѕ СѓСЃС‚СЂРѕР№СЃС‚РІР°. РњРЅРµ РїРѕРЅР°РґРѕР±СЏС‚СЃСЏ С‡Р°СЃС‚РѕС‚Р° СЃРµСЂРґРµС‡РЅС‹С… СЃРѕРєСЂР°С‰РµРЅРёР№, СЃРёСЃС‚РѕР»РёС‡РµСЃРєРѕРµ Рё РґРёР°СЃС‚РѕР»РёС‡РµСЃРєРѕРµ РґР°РІР»РµРЅРёРµ.')
 
-    # тут должен быть код для получения данных с носимого устройства
-
-    # после получения данных можно выполнить предсказание
+    # С‚СѓС‚ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РєРѕРґ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РґР°РЅРЅС‹С… СЃ РЅРѕСЃРёРјРѕРіРѕ СѓСЃС‚СЂРѕР№СЃС‚РІР°
+    # РїРѕСЃР»Рµ РїРѕР»СѓС‡РµРЅРёСЏ РґР°РЅРЅС‹С… РјРѕР¶РЅРѕ РІС‹РїРѕР»РЅРёС‚СЊ РїСЂРµРґСЃРєР°Р·Р°РЅРёРµ
     # alert = predict_heart_attack(user_data[update.message.chat.id])
     # if alert:
-    #     update.message.reply_text('Внимание! Есть риск сердечного приступа.')
+    #     update.message.reply_text('Р’РЅРёРјР°РЅРёРµ! Р•СЃС‚СЊ СЂРёСЃРє СЃРµСЂРґРµС‡РЅРѕРіРѕ РїСЂРёСЃС‚СѓРїР°.')
 
     return ConversationHandler.END
 
-# функция для создания ConversationHandler
+
+# С„СѓРЅРєС†РёСЏ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ ConversationHandler
 def get_conversation_handler() -> ConversationHandler:
     return ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            GENDER: [MessageHandler(Filters.text & ~Filters.command, receive_gender)],
-            AGE: [MessageHandler(Filters.text & ~Filters.command, receive_age)],
-            SUGAR_LEVEL: [MessageHandler(Filters.text & ~Filters.command, receive_sugar_level)],
-            CK_MB: [MessageHandler(Filters.text & ~Filters.command, finish)],
+            GENDER: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_gender)],
+            AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_age)],
+            SUGAR_LEVEL: [MessageHandler(filters.TiEXT & ~filters.COMMAND, receive_sugar_level)],
+            CK_MB: [MessageHandler(filters.TEXT & ~filters.COMMAND, finish)],
         },
-        fallbacks=[MessageHandler(Filters.text & ~Filters.command, lambda update, context: update.message.reply_text('Пожалуйста, введите корректное значение.'))],
+        fallbacks=[MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text('РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ.'))],
     )
-
