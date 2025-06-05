@@ -1,25 +1,22 @@
 import logging
-from telegram.ext import Updater
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 from handlers import get_conversation_handler
 from config import TELEGRAM_BOT_TOKEN
 
-# логирование
+# Р»РѕРіРёСЂРѕРІР°РЅРёРµ
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 
 def main() -> None:
-    updater = Updater(TELEGRAM_BOT_TOKEN)
+    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
-    dispatcher = updater.dispatcher
-
-    # определяем обработчики состояний
+    # РѕРїСЂРµРґРµР»СЏРµРј РѕР±СЂР°Р±РѕС‚С‡РёРєРё СЃРѕСЃС‚РѕСЏРЅРёР№
     conv_handler = get_conversation_handler()
+    application.add_handler(conv_handler)
 
-    dispatcher.add_handler(conv_handler)
+    # Р·Р°РїСѓСЃРє Р±РѕС‚Р°
+    application.run_polling()
 
-    updater.start_polling()
-    updater.idle()
 
 if __name__ == '__main__':
     main()
-
