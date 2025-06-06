@@ -87,20 +87,42 @@ async def receive_edit_choice(update: Update, context: CallbackContext) -> int:
         await update.message.reply_text('Пожалуйста, выберите корректный номер.')
         return EDIT
 
-    # обновление данных в словаре
-async def finish_edit(update: Update, context: CallbackContext) -> int:
 
+# обновление данных в словаре
+async def finish_edit(update: Update, context: CallbackContext) -> int:
+    user_id = update.message.chat.id
+    new_value = update.message.text
+
+    # проверка на редактирование пола
     if GENDER in context.user_data:
-        user_data[update.message.chat.id]['gender'] = update.message.text
+        if new_value not in ['0', '1']:
+            await update.message.reply_text('Пожалуйста, введите 0 для женского или 1 для мужского пола.')
+            return GENDER
+        user_data[user_id]['gender'] = new_value
         await update.message.reply_text('Пол обновлен.')
+
+    # проверка на редактирование возраста
     elif AGE in context.user_data:
-        user_data[update.message.chat.id]['age'] = update.message.text
+        if not new_value.isdigit() or not (1 <= int(new_value) <= 100):
+            await update.message.reply_text('Пожалуйста, введите корректный возраст (от 1 до 100).')
+            return AGE
+        user_data[user_id]['age'] = new_value
         await update.message.reply_text('Возраст обновлен.')
+
+    # проверка на редактирование уровня сахара
     elif SUGAR_LEVEL in context.user_data:
-        user_data[update.message.chat.id]['sugar_level'] = update.message.text
+        if not new_value.isdigit() or not (40 <= int(new_value) <= 500):
+            await update.message.reply_text('Пожалуйста, введите уровень сахара в диапазоне от 40 до 500.')
+            return SUGAR_LEVEL
+        user_data[user_id]['sugar_level'] = new_value
         await update.message.reply_text('Уровень сахара обновлен.')
+
+    # проверка на редактирование показателя креатинкиназа МВ
     elif CK_MB in context.user_data:
-        user_data[update.message.chat.id]['ck_mb'] = update.message.text
+        if not new_value.isdigit() or not (0 <= int(new_value) <= 300):
+            await update.message.reply_text('Пожалуйста, введите корректный показатель креатинкиназа МВ (от 0 до 300).')
+            return CK_MB
+        user_data[user_id]['ck_mb'] = new_value
         await update.message.reply_text('Показатель креатинкиназа МВ обновлен.')
 
     return ConversationHandler.END
