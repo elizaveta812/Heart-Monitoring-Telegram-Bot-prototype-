@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CallbackContext, MessageHandler, fi
 user_data = {}
 
 # Определяем состояния
-GENDER, AGE, SUGAR_LEVEL, CK_MB = range(4)
+GENDER, AGE, SUGAR_LEVEL, CK_MB, EDIT = range(5)
 
 
 async def start(update: Update, context: CallbackContext) -> int:
@@ -26,12 +26,12 @@ async def receive_gender(update: Update, context: CallbackContext) -> int:
 
 async def receive_age(update: Update, context: CallbackContext) -> int:
     age = update.message.text
-    if not age.isdigit() or int(age) <= 0:
-        await update.message.reply_text('Пожалуйста, введите корректный возраст (положительное число).')
+    if not age.isdigit() or int(age) <= 0 or int(age) > 100:
+        await update.message.reply_text('Пожалуйста, введите корректный возраст.')
         return AGE
 
     user_data[update.message.chat.id]['age'] = age
-    await update.message.reply_text('Какой у этого человека уровень сахара (в миллиграммах на децилитр)? Нормальным уровнем считается 60-100.')
+    await update.message.reply_text('Какой у этого человека уровень сахара (в миллиграммах на децилитр)? Нормальным уровнем считается от 60 до 100.')
     return SUGAR_LEVEL
 
 
@@ -42,7 +42,7 @@ async def receive_sugar_level(update: Update, context: CallbackContext) -> int:
         return SUGAR_LEVEL
 
     user_data[update.message.chat.id]['sugar_level'] = sugar_level
-    await update.message.reply_text('Какой у вас показатель креатинкиназа МВ? Если показатель неизвестен, то поставьте любое значение от 0 до 25 - этот уровень считается нормой.')
+    await update.message.reply_text('Какой у этого человека показатель креатинкиназа МВ? Если показатель неизвестен, то поставьте любое значение от 0 до 25 - этот уровень считается нормой.')
     return CK_MB
 
 
@@ -60,6 +60,48 @@ async def finish(update: Update, context: CallbackContext) -> int:
     # alert = predict_heart_attack(user_data[update.message.chat.id])
     # if alert:
     #     update.message.reply_text('Внимание! Есть риск сердечного приступа.')
+
+    return ConversationHandler.END
+
+
+async def edit_data(update: Update, context: CallbackContext) -> int:
+    await update.message.reply_text('Выберите, что хотите редактировать:\n1. Пол\n2. Возраст\n3. Уровень сахара\n4. Показатель креатинкиназа МВ\nВведите номер соответствующего пункта.')
+    return EDIT
+
+
+async def receive_edit_choice(update: Update, context: CallbackContext) -> int:
+    choice = update.message.text
+    if choice == '1':
+        await update.message.reply_text('Введите новый пол (0 для женского, 1 для мужского):')
+        return GENDER
+    elif choice == '2':
+        await update.message.reply_text('Введите новый возраст:')
+        return AGE
+    elif choice == '3':
+        await update.message.reply_text('Введите новый уровень сахара:')
+        return SUGAR_LEVEL
+    elif choice == '4':
+        await update.message.reply_text('Введите новый показатель креатинкиназа МВ:')
+        return CK_MB
+    else:
+        await update.message.reply_text('Пожалуйста, выберите корректный номер.')
+        return EDIT
+
+    # обновление данных в словаре
+async def finish_edit(update: Update, context: CallbackContext) -> int:
+
+    if GENDER in context.user_data:
+        user_data[update.message.chat.id]['gender'] = update.message.text
+        await update.message.reply_text('Пол обновлен.')
+    elif AGE in context.user_data:
+        user_data[update.message.chat.id]['age'] = update.message.text
+        await update.message.reply_text('Возраст обновлен.')
+    elif SUGAR_LEVEL in context.user_data:
+        user_data[update.message.chat.id]['sugar_level'] = update.message.text
+        await update.message.reply_text('Уровень сахара обновлен.')
+    elif CK_MB in context.user_data:
+        user_data[update.message.chat.id]['ck_mb'] = update.message.text
+        await update.message.reply_text('Показатель креатинкиназа МВ обновлен.')
 
     return ConversationHandler.END
 
