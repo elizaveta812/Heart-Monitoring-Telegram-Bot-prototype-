@@ -1,6 +1,7 @@
 import joblib
 import os
 
+
 class ModelHandler:
     def __init__(self, model_path):
         if not os.path.exists(model_path):
