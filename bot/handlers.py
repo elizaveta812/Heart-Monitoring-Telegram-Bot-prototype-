@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CallbackContext, MessageHandler, fi
 from model import ModelHandler
 
 # загружаем модель
-model_path = "models/mfdp_model.pkl"
+model_path = "C:/Users/eliza/PycharmProjects/MFDP-Elizaveta-Zimina/models/mfdp_model.pkl"
 model_handler = ModelHandler(model_path)
 
 # словарь для хранения данных пользователей - потом заменю на базу данных
@@ -68,6 +68,9 @@ async def finish(update: Update, context: CallbackContext) -> int:
         ' Поскольку я пока не могу сам собирать эти данные, мы их сгенерируем!'
     )
 
+    # показ кнопки для генерации данных
+    await create_button(update, context)
+
     # тут в идеале должен быть код для получения данных с носимого устройства
     # после получения данных можно выполнить предсказание
     # alert = predict_heart_attack(user_data[update.message.chat.id])
@@ -78,8 +81,14 @@ async def finish(update: Update, context: CallbackContext) -> int:
 
 
 async def edit_data(update: Update, context: CallbackContext) -> int:
-    await update.message.reply_text('Выберите, что хотите редактировать:\n1. Пол\n2. Возраст\n3. Уровень сахара\n4.'
-                                    ' Показатель креатинкиназа МВ\nВведите номер соответствующего пункта.')
+    await update.message.reply_text(
+        'Команда /edit позволяет вам изменить ранее введенные данные, такие как:\n'
+        '1. Пол\n'
+        '2. Возраст\n'
+        '3. Уровень сахара\n'
+        '4. Показатель креатинкиназа МВ\n'
+        'Выберите, что хотите редактировать, введя номер соответствующего пункта.'
+    )
     return EDIT
 
 
@@ -228,12 +237,14 @@ async def button_handler(update: Update, context: CallbackContext) -> None:
 # функция для создания ConversationHandler
 def get_conversation_handler() -> ConversationHandler:
     return ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[CommandHandler("start", start), CommandHandler("edit", edit_data)],
         states={
             GENDER: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_gender)],
             AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_age)],
             SUGAR_LEVEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_sugar_level)],
             CK_MB: [MessageHandler(filters.TEXT & ~filters.COMMAND, finish)],
+            EDIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_edit_choice)],
         },
-        fallbacks=[MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text('Пожалуйста, введите корректное значение.'))],
+        fallbacks=[MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text(
+            'Пожалуйста, введите корректное значение.'))],
     )
