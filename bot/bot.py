@@ -1,15 +1,17 @@
 import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler
-from handlers import get_conversation_handler
+from handlers import get_conversation_handler, button_handler
 from config import TELEGRAM_BOT_TOKEN
-from handlers import button_handler
-
+from database import init_db
 
 # логирование
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 
 def main() -> None:
+    # инициализация базы данных
+    session = init_db()
+
     application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
     # определяем обработчики состояний
@@ -21,6 +23,9 @@ def main() -> None:
 
     # запуск бота
     application.run_polling()
+
+    # закрытие сессии базы данных
+    session.close()
 
 
 if __name__ == '__main__':
