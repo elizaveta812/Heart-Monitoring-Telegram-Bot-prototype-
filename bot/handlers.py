@@ -6,7 +6,7 @@ from telegram.ext import ApplicationBuilder, CallbackContext, MessageHandler, fi
 from model import ModelHandler
 
 # загружаем модель
-model_path = "C:/Users/eliza/PycharmProjects/MFDP-Elizaveta-Zimina/models/mfdp_model.pkl"
+model_path = "C:/Users/eliza/PycharmProjects/MFDP-Elizaveta-Zimina/models/best_random_forest_model.pkl"
 model_handler = ModelHandler(model_path)
 
 # словарь для хранения данных пользователей - потом заменю на базу данных
@@ -162,43 +162,53 @@ def generate_random_data():
 
 # функция для предсказания риска сердечного приступа
 def predict_heart_attack(model_handler, user_data, random_data):
-    # объединяем данные
-    features = [
-        int(user_data['age']),  # Age (int64)
-        int(user_data['gender']),  # Gender (int64)
-        int(random_data[0]),  # Heart rate (int64)
-        int(random_data[1]),  # Systolic blood pressure (int64)
-        int(random_data[2]),  # Diastolic blood pressure (int64)
-        float(user_data['sugar_level']),  # Blood sugar (float64)
-        float(user_data['ck_mb'])  # CK-MB (float64)
-    ]
+    try:
+        # объединяем данные
+        features = [
+            int(user_data['age']),
+            int(user_data['gender']),
+            int(random_data[0]),
+            int(random_data[1]),
+            int(random_data[2]),
+            float(user_data['sugar_level']),
+            float(user_data['ck_mb']),
+        ]
 
-    # создаем массив с нужными типами данных
-    features = np.array(features, dtype=object)  # временно создаем массив с типом object
-    features[:5] = np.array(features[:5], dtype=np.int64)  # первые 5 элементов int64
-    features[5:] = np.array(features[5:], dtype=np.float64)  # последние 2 элемента float64
+        logging.info("Функция predict_heart_attack: входные данные %s", features)
 
-    # преобразуем в нужный формат для модели
-    features = features.reshape(1, -1)
+        features = np.array(features, dtype=object)
+        features[:5] = np.array(features[:5], dtype=np.int64)
+        features[5:] = np.array(features[5:], dtype=np.float64)
 
-    prediction = model_handler.predict(features)
-    return prediction[0]  # возвращаем предсказание
+        features = features.reshape(1, -1)
+
+        prediction = model_handler.predict(features)
+        logging.info("Предсказание: %s", prediction)
+        return prediction[0]
+    except Exception as e:
+        logging.error("Error in predict_heart_attack: %s", e)
+        raise
 
 
 # Обработчик для генерации данных и предсказания
 async def generate_data_and_predict(user_id, context: CallbackContext) -> None:
     try:
+        logging.info("Получение данных пользователя для ID: %s", user_id)
+
         user_info = {
             'gender': int(user_data[user_id]['gender']),
             'age': int(user_data[user_id]['age']),
             'sugar_level': float(user_data[user_id]['sugar_level']),
             'ck_mb': float(user_data[user_id]['ck_mb']),
         }
+        logging.info("Данные пользователя: %s", user_info)
 
         random_data = generate_random_data()
+        logging.info("Сгенерированные случайные данные: %s", random_data)
 
         # Предсказание
         risk = predict_heart_attack(model_handler, user_info, random_data)
+        logging.info("Результат предсказания: %s", risk)
 
         # Формирование сообщения
         message = (
