@@ -7,27 +7,21 @@
 
 ## Структура проекта
 
-app/
+bot/
 
 ├── logs/                     # Папка для логов
 
-├── services/                 # Модули с бизнес-логикой
+│   ├── my_bot.log
 
-│   ├── auth_service.py
+├── Dockerfile                # Dockerfile для бота
 
-│   ├── alert_service.py      
-
-│   ├── ml_service.py
-
-│   ├── user_service.py
-
-│   └── **init**.py
-
-├── Dockerfile                # Dockerfile для основного приложения
-
-├── main.py                   # Точка входа в приложение
+├── bot.py                   # Запуск бота
 
 ├── model.py                  # Модель данных
+
+├── config.py                  # Загрузка токена
+
+├── handlers.py                  # Определение состояний
 
 └── **init**.py
 
@@ -38,23 +32,13 @@ database/
 └── **init**.py
 
 
-nginx/
-
-└── default.conf              # Конфигурация Nginx
-
 
 tests/
 
-├── test_main.py              # Тесты для основного приложения
+├── test_main.py              # Тесты для ключевых функций бота
 
 └── **init**.py
 
-
-web/
-
-├── app.py                    # Веб-интерфейс (если необходим)
-
-└── Dockerfile                # Dockerfile для веб-интерфейса (если необходим)
 
 
 workers/
