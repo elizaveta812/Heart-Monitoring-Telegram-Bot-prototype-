@@ -201,6 +201,10 @@ async def generate_data_and_predict(update: Update, context: CallbackContext) ->
 
     await update.message.reply_text(message)
 
+    # предупреждение
+    if risk == 1:
+        await update.message.reply_text('Внимание! Есть риск сердечного приступа!')
+
 
 # добавление кнопки для генерации данных
 async def create_button(update: Update, context: CallbackContext) -> None:
