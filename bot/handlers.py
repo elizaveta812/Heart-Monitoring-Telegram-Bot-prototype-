@@ -1,4 +1,5 @@
 import random
+import logging
 import numpy as np
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CallbackContext, MessageHandler, filters, CommandHandler, ConversationHandler
@@ -185,34 +186,37 @@ def predict_heart_attack(model_handler, user_data, random_data):
 
 
 # Обработчик для генерации данных и предсказания
-async def generate_data_and_predict(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.chat.id
-    user_info = {
-        'gender': int(user_data[user_id]['gender']),
-        'age': int(user_data[user_id]['age']),
-        'sugar_level': float(user_data[user_id]['sugar_level']),
-        'ck_mb': float(user_data[user_id]['ck_mb']),
-    }
+async def generate_data_and_predict(user_id, context: CallbackContext) -> None:
+    try:
+        user_info = {
+            'gender': int(user_data[user_id]['gender']),
+            'age': int(user_data[user_id]['age']),
+            'sugar_level': float(user_data[user_id]['sugar_level']),
+            'ck_mb': float(user_data[user_id]['ck_mb']),
+        }
 
-    random_data = generate_random_data()
+        random_data = generate_random_data()
 
-    # Предсказание
-    risk = predict_heart_attack(model_handler, user_info, random_data)
+        # Предсказание
+        risk = predict_heart_attack(model_handler, user_info, random_data)
 
-    # Формирование сообщения
-    message = (
-        f"Сгенерированные данные:\n"
-        f"Частота сердечных сокращений: {random_data[0]} уд/мин\n"
-        f"Систолическое давление: {random_data[1]} мм рт. ст.\n"
-        f"Диастолическое давление: {random_data[2]} мм рт. ст.\n"
-        f"Риск сердечного приступа: {'Да' if risk == 1 else 'Нет'}"
-    )
+        # Формирование сообщения
+        message = (
+            f"Сгенерированные данные:\n"
+            f"Частота сердечных сокращений: {random_data[0]} уд/мин\n"
+            f"Систолическое давление: {random_data[1]} мм рт. ст.\n"
+            f"Диастолическое давление: {random_data[2]} мм рт. ст.\n"
+            f"Риск сердечного приступа: {'Да' if risk == 1 else 'Нет'}"
+        )
 
-    await update.message.reply_text(message)
+        await context.bot.send_message(chat_id=user_id, text=message)
 
-    # предупреждение
-    if risk == 1:
-        await update.message.reply_text('Внимание! Есть риск сердечного приступа!')
+        # предупреждение
+        if risk == 1:
+            await context.bot.send_message(chat_id=user_id, text='Внимание! Есть риск сердечного приступа!')
+    except Exception as e:
+        logging.error("Error in generate_data_and_predict: %s", e)
+        await context.bot.send_message(chat_id=user_id, text='Произошла ошибка при обработке данных.')
 
 
 # добавление кнопки для генерации данных
@@ -229,9 +233,11 @@ async def create_button(update: Update, context: CallbackContext) -> None:
 async def button_handler(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
+    logging.info("Button pressed: %s", query.data)
 
     if query.data == 'generate_data':
-        await generate_data_and_predict(query.message, context)
+        user_id = query.from_user.id  # Получаем ID пользователя из объекта CallbackQuery
+        await generate_data_and_predict(user_id, context)
 
 
 # функция для создания ConversationHandler
