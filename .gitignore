@@ -10,4 +10,4 @@ C:\Users\eliza\Source\Repos\MFDP-Elizaveta-Zimina\.git
 
  .env
 
-models/mfdp_model.pkl
+models/best_random_forest_model.pkl
