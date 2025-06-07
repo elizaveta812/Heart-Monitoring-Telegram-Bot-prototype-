@@ -4,13 +4,14 @@ import numpy as np
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CallbackContext, MessageHandler, filters, CommandHandler, ConversationHandler
 from model import ModelHandler
+from database import init_db, add_user, get_user, update_user
 
 # загружаем модель
 model_path = "C:/Users/eliza/PycharmProjects/MFDP-Elizaveta-Zimina/models/best_random_forest_model.pkl"
 model_handler = ModelHandler(model_path)
 
-# словарь для хранения данных пользователей - потом заменю на базу данных
-user_data = {}
+# инициализация базы данных
+session = init_db()
 
 # Определяем состояния
 GENDER, AGE, SUGAR_LEVEL, CK_MB, EDIT = range(5)
@@ -28,7 +29,14 @@ async def receive_gender(update: Update, context: CallbackContext) -> int:
         await update.message.reply_text('Пожалуйста, введите 0 для женского или 1 для мужского пола.')
         return GENDER
 
-    user_data[update.message.chat.id] = {'gender': gender}
+    # Сохраняем данные в базе данных
+    user_id = update.message.chat.id
+    user = get_user(session, user_id)
+    if not user:
+        add_user(session, chat_id=user_id, gender=gender, age=None, sugar_level=None, ck_mb=None)
+    else:
+        update_user(session, user_id, gender=gender)
+
     await update.message.reply_text('Сколько этому человеку лет?')
     return AGE
 
@@ -39,7 +47,9 @@ async def receive_age(update: Update, context: CallbackContext) -> int:
         await update.message.reply_text('Пожалуйста, введите корректный возраст.')
         return AGE
 
-    user_data[update.message.chat.id]['age'] = age
+    user_id = update.message.chat.id
+    update_user(session, user_id, age=int(age))
+
     await update.message.reply_text('Какой у этого человека уровень сахара (в миллиграммах на децилитр)?'
                                     ' Нормальным уровнем считается от 60 до 100.')
     return SUGAR_LEVEL
@@ -51,7 +61,9 @@ async def receive_sugar_level(update: Update, context: CallbackContext) -> int:
         await update.message.reply_text('Пожалуйста, введите уровень сахара в диапазоне от 40 до 500.')
         return SUGAR_LEVEL
 
-    user_data[update.message.chat.id]['sugar_level'] = sugar_level
+    user_id = update.message.chat.id
+    update_user(session, user_id, sugar_level=float(sugar_level))
+
     await update.message.reply_text('Какой у этого человека показатель креатинкиназа МВ? Если показатель неизвестен,'
                                     ' то поставьте любое значение от 0 до 25 - этот уровень считается нормой.')
     return CK_MB
@@ -63,7 +75,9 @@ async def finish(update: Update, context: CallbackContext) -> int:
         await update.message.reply_text('Пожалуйста, введите корректный показатель креатинкиназа МВ (от 0 до 300).')
         return CK_MB
 
-    user_data[update.message.chat.id]['ck_mb'] = ck_mb
+    user_id = update.message.chat.id
+    update_user(session, user_id, ck_mb=float(ck_mb))
+
     await update.message.reply_text(
         'Спасибо! Теперь мне понадобятся частота сердечных сокращений, систолическое и диастолическое давление.'
         ' Поскольку я пока не могу сам собирать эти данные, мы их сгенерируем!'
@@ -112,41 +126,45 @@ async def receive_edit_choice(update: Update, context: CallbackContext) -> int:
         return EDIT
 
 
-# обновление данных в словаре
+# обновление данных
 async def finish_edit(update: Update, context: CallbackContext) -> int:
     user_id = update.message.chat.id
     new_value = update.message.text
 
-    # проверка на редактирование пола
+    # Проверка на редактирование пола
     if GENDER in context.chat_data:
         if new_value not in ['0', '1']:
             await update.message.reply_text('Пожалуйста, введите 0 для женского или 1 для мужского пола.')
             return GENDER
-        user_data[user_id]['gender'] = new_value
+        # Обновляем пол в базе данных
+        update_user(session, user_id, gender=new_value)
         await update.message.reply_text('Пол обновлен.')
 
-    # проверка на редактирование возраста
+    # Проверка на редактирование возраста
     elif AGE in context.chat_data:
         if not new_value.isdigit() or not (1 <= int(new_value) <= 100):
             await update.message.reply_text('Пожалуйста, введите корректный возраст (от 1 до 100).')
             return AGE
-        user_data[user_id]['age'] = new_value
+        # Обновляем возраст в базе данных
+        update_user(session, user_id, age=int(new_value))
         await update.message.reply_text('Возраст обновлен.')
 
-    # проверка на редактирование уровня сахара
+    # Проверка на редактирование уровня сахара
     elif SUGAR_LEVEL in context.chat_data:
         if not new_value.isdigit() or not (40 <= int(new_value) <= 500):
             await update.message.reply_text('Пожалуйста, введите уровень сахара в диапазоне от 40 до 500.')
             return SUGAR_LEVEL
-        user_data[user_id]['sugar_level'] = new_value
+        # Обновляем уровень сахара в базе данных
+        update_user(session, user_id, sugar_level=float(new_value))
         await update.message.reply_text('Уровень сахара обновлен.')
 
-    # проверка на редактирование показателя креатинкиназа МВ
+    # Проверка на редактирование показателя креатинкиназа МВ
     elif CK_MB in context.chat_data:
         if not new_value.isdigit() or not (0 <= int(new_value) <= 300):
             await update.message.reply_text('Пожалуйста, введите корректный показатель креатинкиназа МВ (от 0 до 300).')
             return CK_MB
-        user_data[user_id]['ck_mb'] = new_value
+        # Обновляем показатель креатинкиназа МВ в базе данных
+        update_user(session, user_id, ck_mb=float(new_value))
         await update.message.reply_text('Показатель креатинкиназа МВ обновлен.')
 
     return ConversationHandler.END
@@ -195,11 +213,17 @@ async def generate_data_and_predict(user_id, context: CallbackContext) -> None:
     try:
         logging.info("Получение данных пользователя для ID: %s", user_id)
 
+        # Получаем данные пользователя из базы данных
+        user = get_user(session, user_id)
+        if not user:
+            await context.bot.send_message(chat_id=user_id, text='Пользователь не найден. Пожалуйста, введите данные заново.')
+            return
+
         user_info = {
-            'gender': int(user_data[user_id]['gender']),
-            'age': int(user_data[user_id]['age']),
-            'sugar_level': float(user_data[user_id]['sugar_level']),
-            'ck_mb': float(user_data[user_id]['ck_mb']),
+            'gender': int(user.gender),
+            'age': int(user.age),
+            'sugar_level': float(user.sugar_level),
+            'ck_mb': float(user.ck_mb),
         }
         logging.info("Данные пользователя: %s", user_info)
 
