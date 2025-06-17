@@ -7,5 +7,5 @@ load_dotenv()
 # получаем токен из переменной окружения
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-# тут возможно будут другие переменные окружения
-
+# URL FastAPI приложения
+API_URL = "http://127.0.0.1:8000"
