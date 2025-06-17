@@ -137,15 +137,19 @@ async def receive_edit_choice(update: Update, context: CallbackContext) -> int:
     choice = update.message.text
     if choice == '1':
         await update.message.reply_text('Введите новый пол (0 для женского, 1 для мужского):')
+        context.chat_data['edit_field'] = 'gender'
         return GENDER
     elif choice == '2':
         await update.message.reply_text('Введите новый возраст:')
+        context.chat_data['edit_field'] = 'age'
         return AGE
     elif choice == '3':
         await update.message.reply_text('Введите новый уровень сахара:')
+        context.chat_data['edit_field'] = 'sugar_level'
         return SUGAR_LEVEL
     elif choice == '4':
         await update.message.reply_text('Введите новый показатель креатинкиназа МВ:')
+        context.chat_data['edit_field'] = 'ck_mb'
         return CK_MB
     else:
         await update.message.reply_text('Пожалуйста, выберите корректный номер.')
@@ -157,50 +161,55 @@ async def finish_edit(update: Update, context: CallbackContext) -> int:
     user_id = update.message.chat.id
     new_value = update.message.text
 
+    # Получаем пользователя из словаря
+    user = users.get(user_id)
+    if not user:
+        await update.message.reply_text('Пользователь не найден. Пожалуйста, начните заново.')
+        return ConversationHandler.END
+
     # Проверка на редактирование пола
-    if GENDER in context.chat_data:
+    if context.chat_data.get('edit_field') == 'gender':
         if new_value not in ['0', '1']:
             await update.message.reply_text('Пожалуйста, введите 0 для женского или 1 для мужского пола.')
             return GENDER
-        # Обновляем пол в базе данных
-        update_user(session, user_id, gender=new_value)
+        user.update_gender(new_value)
         await update.message.reply_text('Пол обновлен.')
 
     # Проверка на редактирование возраста
-    elif AGE in context.chat_data:
+    elif context.chat_data.get('edit_field') == 'age':
         if not new_value.isdigit() or not (1 <= int(new_value) <= 100):
             await update.message.reply_text('Пожалуйста, введите корректный возраст (от 1 до 100).')
             return AGE
-        # Обновляем возраст в базе данных
-        update_user(session, user_id, age=int(new_value))
+        user.update_age(int(new_value))
         await update.message.reply_text('Возраст обновлен.')
 
     # Проверка на редактирование уровня сахара
-    elif SUGAR_LEVEL in context.chat_data:
+    elif context.chat_data.get('edit_field') == 'sugar_level':
         if not new_value.isdigit() or not (40 <= int(new_value) <= 500):
             await update.message.reply_text('Пожалуйста, введите уровень сахара в диапазоне от 40 до 500.')
             return SUGAR_LEVEL
-        # Обновляем уровень сахара в базе данных
-        update_user(session, user_id, sugar_level=float(new_value))
+        user.update_sugar_level(float(new_value))
         await update.message.reply_text('Уровень сахара обновлен.')
 
     # Проверка на редактирование показателя креатинкиназа МВ
-    elif CK_MB in context.chat_data:
+    elif context.chat_data.get('edit_field') == 'ck_mb':
         if not new_value.isdigit() or not (0 <= int(new_value) <= 300):
             await update.message.reply_text('Пожалуйста, введите корректный показатель креатинкиназа МВ (от 0 до 300).')
             return CK_MB
-        # Обновляем показатель креатинкиназа МВ в базе данных
-        update_user(session, user_id, ck_mb=float(new_value))
+        user.update_ck_mb(float(new_value))
         await update.message.reply_text('Показатель креатинкиназа МВ обновлен.')
+
+    # Сохраняем изменения в базе данных
+    update_user(session, user_id, gender=user.gender, age=user.age, sugar_level=user.sugar_level, ck_mb=user.ck_mb)
 
     return ConversationHandler.END
 
 
 # функция для генерации случайных данных
 def generate_random_data():
-    heart_rate = random.randint(20, 200)
-    systolic_pressure = random.randint(40, 230)
-    diastolic_pressure = random.randint(30, 160)
+    heart_rate = random.randint(50, 160)
+    systolic_pressure = random.randint(50, 200)
+    diastolic_pressure = random.randint(40, 150)
     return heart_rate, systolic_pressure, diastolic_pressure
 
 
@@ -239,18 +248,14 @@ async def generate_data_and_predict(user_id, context: CallbackContext) -> None:
     try:
         logging.info("Получение данных пользователя для ID: %s", user_id)
 
-        # Получаем данные пользователя из базы данных
-        user = get_user(session, user_id)
+        # Получаем данные пользователя из временного хранилища
+        user = users.get(user_id)
         if not user:
             await context.bot.send_message(chat_id=user_id, text='Пользователь не найден. Пожалуйста, введите данные заново.')
             return
 
-        user_info = {
-            'gender': int(user.gender),
-            'age': int(user.age),
-            'sugar_level': float(user.sugar_level),
-            'ck_mb': float(user.ck_mb),
-        }
+        user_info = user
+
         logging.info("Данные пользователя: %s", user_info)
 
         random_data = generate_random_data()
