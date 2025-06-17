@@ -1,7 +1,8 @@
 import logging
+import requests
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 from handlers import get_conversation_handler, button_handler
-from config import TELEGRAM_BOT_TOKEN
+from config import TELEGRAM_BOT_TOKEN, API_URL
 from database.database import init_db
 
 # логирование
@@ -24,6 +25,14 @@ def main() -> None:
 
     # обработчик нажатий кнопок
     application.add_handler(CallbackQueryHandler(button_handler))
+
+    # пример вызова API
+    response = requests.get(f"{API_URL}/users/1")  # получение пользователя с айди 1
+    if response.status_code == 200:
+        user_data = response.json()
+        logging.info(f"Получены данные пользователя: {user_data}")
+    else:
+        logging.error(f"Ошибка при получении данных пользователя: {response.status_code}")
 
     # запуск бота
     logging.info('Бот запущен')
