@@ -133,6 +133,7 @@ async def edit_data(update: Update, context: CallbackContext) -> int:
     return EDIT
 
 
+# Возможность редактировать введенные данные
 async def receive_edit_choice(update: Update, context: CallbackContext) -> int:
     choice = update.message.text
     if choice == '1':
