@@ -3,12 +3,12 @@ import logging
 import numpy as np
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CallbackContext, MessageHandler, filters, CommandHandler, ConversationHandler
-from model import ModelHandler
+from model import SingletonModelHandler
 from database.database import init_db, add_user, get_user, update_user
 
 # загружаем модель
 model_path = "C:/Users/eliza/PycharmProjects/MFDP-Elizaveta-Zimina/models/best_random_forest_model.pkl"
-model_handler = ModelHandler(model_path)
+model_handler = SingletonModelHandler(model_path)
 
 # инициализация базы данных
 session = init_db()
