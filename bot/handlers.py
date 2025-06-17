@@ -13,34 +13,61 @@ model_handler = SingletonModelHandler(model_path)
 # инициализация базы данных
 session = init_db()
 
-# Определяем состояния
+
+# Объявляю класс пользователей со всеми их признаками
+class User:
+    def __init__(self, user_id, gender=None, age=None, sugar_level=None, ck_mb=None):
+        self.user_id = user_id
+        self.gender = gender
+        self.age = age
+        self.sugar_level = sugar_level
+        self.ck_mb = ck_mb
+
+    def update_gender(self, gender):
+        self.gender = gender
+
+    def update_age(self, age):
+        self.age = age
+
+    def update_sugar_level(self, sugar_level):
+        self.sugar_level = sugar_level
+
+    def update_ck_mb(self, ck_mb):
+        self.ck_mb = ck_mb
+
+
+# Определяю состояния
 GENDER, AGE, SUGAR_LEVEL, CK_MB, EDIT = range(5)
 
+# Словарь для временного хранения пользователей, чтобы не обращаться каждый раз к базе данных
+users = {}
 
+
+# Начало работы
 async def start(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text('Привет! Давайте начнем. Какой пол у человека, за чьим состоянием я буду следить?'
                                     ' Если мужской, то поставьте 1, а если женский, то поставьте 0.')
     return GENDER
 
 
+# Получаем пол
 async def receive_gender(update: Update, context: CallbackContext) -> int:
     gender = update.message.text
     if gender not in ['0', '1']:
         await update.message.reply_text('Пожалуйста, введите 0 для женского или 1 для мужского пола.')
         return GENDER
 
-    # Сохраняем данные в базе данных
     user_id = update.message.chat.id
-    user = get_user(session, user_id)
-    if not user:
-        add_user(session, chat_id=user_id, gender=gender, age=None, sugar_level=None, ck_mb=None)
-    else:
-        update_user(session, user_id, gender=gender)
+    if user_id not in users:
+        users[user_id] = User(user_id)
+
+    users[user_id].update_gender(gender)
 
     await update.message.reply_text('Сколько этому человеку лет?')
     return AGE
 
 
+# Получаем возраст
 async def receive_age(update: Update, context: CallbackContext) -> int:
     age = update.message.text
     if not age.isdigit() or int(age) <= 0 or int(age) > 100:
@@ -48,13 +75,13 @@ async def receive_age(update: Update, context: CallbackContext) -> int:
         return AGE
 
     user_id = update.message.chat.id
-    update_user(session, user_id, age=int(age))
-
+    users[user_id].update_age(int(age))
     await update.message.reply_text('Какой у этого человека уровень сахара (в миллиграммах на децилитр)?'
                                     ' Нормальным уровнем считается от 60 до 100.')
     return SUGAR_LEVEL
 
 
+# Получаем уровень сахара
 async def receive_sugar_level(update: Update, context: CallbackContext) -> int:
     sugar_level = update.message.text
     if not sugar_level.isdigit() or not (40 <= int(sugar_level) <= 500):
@@ -62,13 +89,13 @@ async def receive_sugar_level(update: Update, context: CallbackContext) -> int:
         return SUGAR_LEVEL
 
     user_id = update.message.chat.id
-    update_user(session, user_id, sugar_level=float(sugar_level))
-
+    users[user_id].update_sugar_level(float(sugar_level))
     await update.message.reply_text('Какой у этого человека показатель креатинкиназа МВ? Если показатель неизвестен,'
                                     ' то поставьте любое значение от 0 до 25 - этот уровень считается нормой.')
     return CK_MB
 
 
+# Получаем креатинкиназа мв и заканчиваем работу
 async def finish(update: Update, context: CallbackContext) -> int:
     ck_mb = update.message.text
     if not ck_mb.isdigit() or int(ck_mb) < 0 or int(ck_mb) > 300:
@@ -76,8 +103,7 @@ async def finish(update: Update, context: CallbackContext) -> int:
         return CK_MB
 
     user_id = update.message.chat.id
-    update_user(session, user_id, ck_mb=float(ck_mb))
-
+    users[user_id].update_ck_mb(float(ck_mb))
     await update.message.reply_text(
         'Спасибо! Теперь мне понадобятся частота сердечных сокращений, систолическое и диастолическое давление.'
         ' Поскольку я пока не могу сам собирать эти данные, мы их сгенерируем!'
