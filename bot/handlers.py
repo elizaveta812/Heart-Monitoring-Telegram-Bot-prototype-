@@ -6,7 +6,7 @@ from telegram.ext import ApplicationBuilder, CallbackContext, MessageHandler, fi
 from model import SingletonModelHandler
 from database.database import init_db, add_user, get_user, update_user
 
-# загружаем модель
+# загружаем модель только один раз с помощью синглтона
 model_path = "C:/Users/eliza/PycharmProjects/MFDP-Elizaveta-Zimina/models/best_random_forest_model.pkl"
 model_handler = SingletonModelHandler(model_path)
 
