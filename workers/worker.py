@@ -2,7 +2,7 @@ import pika
 import json
 import threading
 import logging
-from bot.model import ModelHandler
+from bot.model import SingletonModelHandler
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +33,7 @@ def process_message(body):
 
     try:
         # выполнение предсказания
-        model = ModelHandler(model_id=1, model_name="best_random_forest_model.pkl")
+        model = SingletonModelHandler(model_id=1, model_name="best_random_forest_model.pkl")
         prediction = model.predict(input_data)
 
         # запись результата
